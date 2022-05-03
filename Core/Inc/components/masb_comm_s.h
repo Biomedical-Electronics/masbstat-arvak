@@ -1,7 +1,6 @@
 #ifndef INC_COMPONENTS_MASB_COMM_S_H_
 #define INC_COMPONENTS_MASB_COMM_S_H_
 
-#include "stm32f4xx_hal.h
 
 #define UART_BUFF_SIZE		50
 #define UART_TERM_CHAR		0x00
