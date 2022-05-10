@@ -5,7 +5,6 @@
 #include "mcp4725_driver.h"
 
 
-struct CV_Configuration_S cvConfiguration;
 double vCell;
 double vObjective;
 double vReal;
@@ -15,7 +14,7 @@ struct Data_S data;
 
 void cyclic_volt(){
 
-	cvConfiguration = MASB_COMM_S_getCvConfiguration();
+	struct CV_Configuration_S cvConfiguration = MASB_COMM_S_getCvConfiguration();
 
 	vObjective = cvConfiguration.eVertex1;
 
@@ -29,7 +28,12 @@ void cyclic_volt(){
 		vReal=calculateVrefVoltage(getVoltage());
 		iReal=calculateIcellCurrent(getCurrent());
 
-		MASB_COMM_S_sendData();
+		data.point=cycle;
+		data.timeMs=cvConfiguration.scanRate*cycle;
+		data.voltage=vReal;
+		data.current=iReal;
+		MASB_COMM_S_sendData(data);
+
 
 		if (vReal == vObjective){
 			if (vObjective == cvConfiguration.eVertex1){
@@ -52,6 +56,7 @@ void cyclic_volt(){
 				MCP4725_SetOutputVoltage(vCell-eStep);
 			}
 		}
+		cycle++;
 	}
 	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_PIN, GPIO_PIN_RESET);
 }
