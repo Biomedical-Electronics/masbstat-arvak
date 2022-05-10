@@ -6,9 +6,9 @@ static uint32_t current=0;
 static uint32_t voltage=0;
 
 
-void initialize_timer(TIM_HandleTypeDef *htim3, samplingPeriod){
-	__HAL_TIM_SET_AUTORELOAD(*htim3, (uint32_t)((samplingPeriod*8400.0)));
-	__HAL_TIM_SET_COUNTER(*htim3, 1);
+void initialize_timer(TIM_HandleTypeDef* htim3, double samplingPeriod){
+	__HAL_TIM_SET_AUTORELOAD(htim3, (uint32_t)((samplingPeriod*8400.0)));
+	__HAL_TIM_SET_COUNTER(htim3, 1);
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {

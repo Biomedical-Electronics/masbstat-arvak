@@ -1,6 +1,8 @@
 #ifndef INC_COMPONENTS_STM32MAIN_H_
 #define INC_COMPONENTS_STM32MAIN_H_
 
+#include "main.h"
+
 
 struct Handles_S {
     UART_HandleTypeDef *huart;

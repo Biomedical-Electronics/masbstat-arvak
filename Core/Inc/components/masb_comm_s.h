@@ -16,7 +16,8 @@
 #ifndef FALSE
     #define FALSE				0
 #endif
-
+#include "stdint.h"
+#include "main.h"
 struct Data_S {
 
 	uint32_t point;
