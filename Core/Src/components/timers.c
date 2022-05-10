@@ -1,5 +1,5 @@
 #include "main.h"
-
+#include "adc.h"
 
 
 static uint32_t current=0;
