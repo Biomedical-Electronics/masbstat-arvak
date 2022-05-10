@@ -8,6 +8,8 @@
 #ifndef INC_COMPONENTS_CHRONOAMPEROMETRY_H_
 #define INC_COMPONENTS_CHRONOAMPEROMETRY_H_
 
+#include "stdint.h"
+
 struct CA_Configuration_S {
 	double eDC;
 	uint32_t samplingPeriodMs;

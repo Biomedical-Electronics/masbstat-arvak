@@ -11,7 +11,8 @@
 #include "components/masb_comm_s.h"
 #include "components/mcp4725_driver.h"
 
-
+extern MCP4725_Handle_T hdac;
+extern TIM_HandleTypeDef htim3;
 struct CA_Configuration_S caConfiguration;
 double vReal;
 double iReal;
@@ -22,11 +23,11 @@ void cyclic_volt(){
 
 	caConfiguration = MASB_COMM_S_getCaConfiguration();
 
-	MCP4725_SetOutputVoltage(caConfiguration.eDC);
+	MCP4725_SetOutputVoltage(hdac,calculateDacOutputVoltage(caConfiguration.eDC));
 
-	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_SET);
 
-	initialize_timer(*htim3, caConfiguration.samplingPeriodMs);
+	initialize_timer(&htim3, caConfiguration.samplingPeriodMs);
 	cycle = 1;
 	while (1){
 		vReal=calculateVrefVoltage(getVoltage());
@@ -44,5 +45,5 @@ void cyclic_volt(){
 			break;
 		}
 	}
-	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_RESET);
 }

@@ -2,7 +2,7 @@
 #define __I2C_LIB_H
 
 #include <stdint.h>
-#include "stm32f4xx_hal.h"
+#include "main.h"
 
 // Comentar esta linea cuando se tenga la placa disponible.
 #define I2C_DEBUG

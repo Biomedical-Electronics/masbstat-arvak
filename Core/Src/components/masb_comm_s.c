@@ -11,6 +11,9 @@
 
 #include "components/masb_comm_s.h"
 #include "components/cobs.h"
+#include "components/chronoamperometry.h"
+#include "components/cyclic_voltammetry.h"
+
 
 extern UART_HandleTypeDef huart2;
 //static UART_HandleTypeDef *huart2;
