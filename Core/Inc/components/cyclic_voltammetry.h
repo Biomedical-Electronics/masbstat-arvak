@@ -1,6 +1,8 @@
 #ifndef INC_COMPONENTS_CYCLIC_VOLTAMMETRY_H_
 #define INC_COMPONENTS_CYCLIC_VOLTAMMETRY_H_
 
+#include "main.h"
+
 struct CV_Configuration_S {
 	double eBegin;
 	double eVertex1;
