@@ -56,12 +56,12 @@ void cyclic_volt(){
 			MASB_COMM_S_sendData(data);
 
 			while (1){
-				if (vdesired==vObjective){
-					if (vObjective==cvConfiguration.eVertex1){
+				if (compareFloating(vdesired,vObjective)){
+					if (compareFloating(vObjective,cvConfiguration.eVertex1)){
 						vObjective = cvConfiguration.eVertex2;
 						sign=-sign;
 					} else{
-						if (vObjective==cvConfiguration.eVertex2){
+						if (compareFloating(vObjective,cvConfiguration.eVertex2)){
 							vObjective = cvConfiguration.eBegin;
 							sign=-sign;
 						} else{
@@ -94,4 +94,9 @@ void cyclic_volt(){
 	HAL_TIM_Base_Stop_IT(&htim3);
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_RESET);
+}
+
+// Function to compare two long floating point numbers
+int compareFloating(double x, double y){
+	return (x-y)*(x-y)<0.00001;
 }
