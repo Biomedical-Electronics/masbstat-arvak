@@ -28,6 +28,7 @@ void chronoamp(){
 	MCP4725_SetOutputVoltage(hdac,calculateDacOutputVoltage(caConfiguration.eDC));
 
 	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_SET);
+	HAL_Delay(10); // Ading a little delay
 
 	initialize_timer(&htim3, caConfiguration.samplingPeriodMs);
 	while (1){
