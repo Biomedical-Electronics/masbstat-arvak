@@ -32,4 +32,5 @@ uint8_t getMeasure(){
 		measure=0;
 		return 1;
 	}
+	return 0;
 }

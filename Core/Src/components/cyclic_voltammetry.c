@@ -32,7 +32,9 @@ void cyclic_volt(){
 
 	HAL_Delay(10); // Adding a little delay
 
-	initialize_timer(&htim3, cvConfiguration.eStep/cvConfiguration.scanRate*1000);
+	double sampling_period=cvConfiguration.eStep/(cvConfiguration.scanRate/1000.0);
+
+	initialize_timer(&htim3, sampling_period);
 	cycle = 1;
 	end=0;
 	point=0;
@@ -50,7 +52,7 @@ void cyclic_volt(){
 			iReal=calculateIcellCurrent(getCurrent());
 
 			data.point=point;
-			data.timeMs=cvConfiguration.eStep/cvConfiguration.scanRate*1000*point;
+			data.timeMs=(uint32_t)(sampling_period*(double)point);
 			data.voltage=vReal;
 			data.current=iReal;
 			MASB_COMM_S_sendData(data);
