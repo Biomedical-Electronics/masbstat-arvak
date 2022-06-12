@@ -2,7 +2,7 @@
  * chronoamperometry.c
  *
  *  Created on: 10 may. 2022
- *      Author: Rubén Cuervo & Pere Pena
+ *      Author: Ruben Cuervo & Pere Pena
  */
 
 #include "components/chronoamperometry.h"
@@ -23,50 +23,38 @@ struct Data_S data;
 
 void chronoamp(){
 
-	caConfiguration = MASB_COMM_S_getCaConfiguration();
+	caConfiguration = MASB_COMM_S_getCaConfiguration(); // Obtain the chronoamperometry configuration
 
-	MCP4725_SetOutputVoltage(hdac,calculateDacOutputVoltage(caConfiguration.eDC));
+	MCP4725_SetOutputVoltage(hdac,calculateDacOutputVoltage(caConfiguration.eDC)); // Fix Vcell to eDC
 
-	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_SET);
-	HAL_Delay(10); // Ading a little delay
+	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_SET); // Close the relay
 
-	initialize_timer(&htim3, caConfiguration.samplingPeriodMs);
-	while (1){
-			if (getMeasure()){
-				vReal=calculateVrefVoltage(getVoltage());
-				iReal=calculateIcellCurrent(getCurrent());
+	HAL_Delay(10); // Addition of a small delay so as the circuit stabilizes
 
-				data.point=1;
-				data.timeMs=0;
-				data.voltage=vReal;
-				data.current=iReal;
+	initialize_timer(&htim3, caConfiguration.samplingPeriodMs); // Timer initialization with the known sampling period
 
-				MASB_COMM_S_sendData(data);
-				break;
-			}
-	}
-
-	cycle=1;
+	cycle=0;
 
 	while (1){
-		if (getMeasure()){
-			vReal=calculateVrefVoltage(getVoltage());
-			iReal=calculateIcellCurrent(getCurrent());
+		if (getMeasure()){ // If the sampling period has elapsed
 
-			data.point=cycle+1;
-			data.timeMs=cycle*caConfiguration.samplingPeriodMs;
+			vReal=calculateVrefVoltage(getVoltage()); // Obtain the Vreal voltage by using the formula found in formulas.c
+			iReal=calculateIcellCurrent(getCurrent()); // Obtain the current by using the formula found in formulas.c
+
+			data.point=cycle+1; // Number of cycles +1 because we start at 2 (not 1)
+			data.timeMs=cycle*caConfiguration.samplingPeriodMs; // Increase the time
 			data.voltage=vReal;
 			data.current=iReal;
 
-			MASB_COMM_S_sendData(data);
-			cycle++;
+			MASB_COMM_S_sendData(data); // Send data to host
+			cycle++; // Increasing the number of cycle
 
-			if (data.timeMs>=caConfiguration.measurementTime*1000){
-				break;
+			if (data.timeMs>=caConfiguration.measurementTime*1000){ // If measurement time has elapsed
+				break; // Stop the measurement
 			}
 		}
 	}
-	HAL_TIM_Base_Stop_IT(&htim3);
-	HAL_ADC_Stop(&hadc1);
-	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_RESET);
+	HAL_TIM_Base_Stop_IT(&htim3); // Stop the timer
+	HAL_ADC_Stop(&hadc1); // Stop the ADC
+	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_RESET); // Open the ADC
 }

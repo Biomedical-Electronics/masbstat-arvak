@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "components/stm32main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -100,14 +100,17 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  setup();
+  struct Handles_S myHandles;
+  myHandles.huart = &huart2;
+
+  setup(&myHandles); // setup function from stm32main.c
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  loop(); // Function that will be executed continuously
+	  loop(); // loop function from stm32main.c that will be executed continuously
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
