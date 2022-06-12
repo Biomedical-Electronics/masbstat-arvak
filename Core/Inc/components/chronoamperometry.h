@@ -2,7 +2,7 @@
  * chronoamperometry.h
  *
  *  Created on: 10 may. 2022
- *      Author: Rubén Cuervo & Pere Pena
+ *      Authors: Ruben Cuervo & Pere Pena
  */
 
 #ifndef INC_COMPONENTS_CHRONOAMPEROMETRY_H_

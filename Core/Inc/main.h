@@ -1,5 +1,6 @@
 /* USER CODE BEGIN Header */
 /**
+ * Authors: Ruben Cuervo & Pere Pena
   ******************************************************************************
   * @file           : main.h
   * @brief          : Header for main.c file.

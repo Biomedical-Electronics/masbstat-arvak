@@ -1,3 +1,10 @@
+/*
+ * cyclic_voltammetry.h
+ *
+ *  Created on: 10 may. 2022
+ *      Authors: Ruben Cuervo & Pere Pena
+ */
+
 #ifndef INC_COMPONENTS_CYCLIC_VOLTAMMETRY_H_
 #define INC_COMPONENTS_CYCLIC_VOLTAMMETRY_H_
 
@@ -13,5 +20,7 @@ struct CV_Configuration_S {
 };
 
 void cyclic_volt();
+
+int compareFloating(double,double);
 
 #endif /* INC_COMPONENTS_CYCLIC_VOLTAMMETRY_H_ */

@@ -2,7 +2,7 @@
  * adc.c
  *
  *  Created on: 3 may. 2022
- *      Author: Rubén Cuervo & Pere Pena
+ *      Author: Ruben Cuervo & Pere Pena
  */
 #include "main.h"
 extern ADC_HandleTypeDef hadc1;

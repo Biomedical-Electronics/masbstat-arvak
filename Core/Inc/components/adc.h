@@ -2,7 +2,7 @@
  * adc.h
  *
  *  Created on: 3 may. 2022
- *      Author: Rubén Cuervo & Pere Pena
+ *      Authors: Ruben Cuervo & Pere Pena
  */
 
 #ifndef INC_COMPONENTS_ADC_H_

@@ -2,7 +2,7 @@
  * PMU.c
  *
  *  Created on: May 9, 2022
- *      Author: Rubén Cuervo & Pere Pena
+ *      Author: Ruben Cuervo & Pere Pena
  */
 #include "main.h"
 
