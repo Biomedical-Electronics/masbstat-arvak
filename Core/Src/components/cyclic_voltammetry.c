@@ -1,136 +1,115 @@
-/**
- ******************************************************************************
- * @file		cyclic_voltammetry.c
- * @brief		Gestión de la voltammetría cíclica.
- * @author		Albert Álvarez Carulla
- * @copyright	Copyright 2020 Albert Álvarez Carulla. All rights reserved.
- ******************************************************************************
+/*
+ * cyclic_voltammetry.c
+ *
+ *  Created on: 10 may. 2022
+ *      Author: Ruben Cuervo & Pere Pena
  */
-
 #include "components/cyclic_voltammetry.h"
-#include "components/masb_comm_s.h" // en este header se detallan los paquetes de comandos que inician y realizan las mediciones
-#include "components/dac.h"
-#include "components/adc.h"
-#include "components/formulas.h"
+#include "components/timers.h"
 #include "main.h"
-#include "components/stm32main.h"
-// per configurar el voltatge de la cela
+#include "components/masb_comm_s.h"
+#include "components/mcp4725_driver.h"
+#include "components/formulas.h"
 
-#include "components/i2c_lib.h"
 
-extern uint8_t count;
-extern volatile uint8_t state;
-extern volatile _Bool timeElapsed;
-extern TIM_HandleTypeDef htim3; //timer
-uint32_t frequency;
+double vObjective;
+double vReal;
+double iReal;
+extern MCP4725_Handle_T hdac;
+extern TIM_HandleTypeDef htim3;
+extern ADC_HandleTypeDef hadc1;
+uint8_t cycle;
+uint8_t end;
+uint64_t point;
+struct Data_S data;
+double eStep;
+double vdesired;
+int sign;
 
-const double tol = 1e-6; //tolerancia para determinar si 2 valores son iguales 
+void cyclic_volt(){
 
-_Bool decimalEquals(double num1, double num2, double tolerance) {
-	return fabs(num1 - num2) < tolerance;
-}
+	struct CV_Configuration_S cvConfiguration = MASB_COMM_S_getCvConfiguration(); // Obtain the cyclic voltammetry configuration
 
-void CyclicVoltammetry(struct CV_Configuration_S cvConfiguration) {
+	MCP4725_SetOutputVoltage(hdac,calculateDacOutputVoltage(cvConfiguration.eBegin)); // Fix Vcell to eBegin
 
-	double ebegin = cvConfiguration.eBegin; // Voltaje inicial que se le asigna a la celda electroquimica
+	vObjective = cvConfiguration.eVertex1; // Set the objective voltage to vertex 1
 
-	sendVoltage(ebegin);
-	double vObjetivo = cvConfiguration.eVertex1; // voltaje al que debe llegar la funcion (primer vertice)
-	double desiredVcell = ebegin;
+	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_SET); // Close the relay
 
-	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_SET); //  Cerramos el rele
+	HAL_Delay(10); // Addition of a small delay so as the circuit stabilizes
 
-	uint8_t cycles = cvConfiguration.cycles; // nombre total de ciclos/medidas de la voltimetria ciclica
-	double scanRate = cvConfiguration.scanRate; // variación de la tensión de la celda electroquímica en el tiempo
-	double eStep = cvConfiguration.eStep; // incremento/decremento de la tensión entre dos puntos consecutivos
-	frequency = (uint32_t)(eStep / scanRate * 1000.0); // tiempo entre muestras
+	double sampling_period=cvConfiguration.eStep/(cvConfiguration.scanRate/1000.0); // Commute the sampling period (decimal optimization)
 
-	ClockSettings(frequency);
+	initialize_timer(&htim3, sampling_period); // Timer initialization with the known sampling period
 
-	count = 1; // inicializamos la voltametria.
-	state = CV; // mientras se este ejecutando una Voltametria, el estado sera CV
-	timeElapsed = FALSE;
-	while (cycles) { // mientras no hayamos llegado al ultimo ciclo de la voltametria
+	// Initialization of the variables for the loop
+	cycle = 1;
+	end=0;
+	point=0;
+	vdesired=cvConfiguration.eBegin; // Voltage we want to arrive at short term
+	eStep=cvConfiguration.eStep;
 
-		if (timeElapsed) {
-			timeElapsed = FALSE;
+	if (vObjective>cvConfiguration.eVertex2){ // If the objective voltage is bigger than vertex 2
+		sign=1; // The sign will be positive
+	} else{ // If the objective voltage is smaller than vertex 2
+		sign=-1; // The sign will be negative (start the movement to the other side)
+	}
 
-			// Desde ADC llamamos a la variable Vcell, la cual comparamos com Vobjetivo
-			// para ver si ha llegado al vertice 1, vertice 2 o eBegin.
+	while (1){
+		if (getMeasure()){ // If the sampling period has elapsed
 
-			if (decimalEquals(desiredVcell, vObjetivo, tol)) {
+			vReal=calculateVrefVoltage(getVoltage()); // Obtain the Vreal voltage by using the formula found in formulas.c
+			iReal=calculateIcellCurrent(getCurrent()); // Obtain the current by using the formula found in formulas.c
 
-				// ******************* Caso 1: que nos encontremos en el vertice 1  *****************
+			data.point=point;
+			data.timeMs=(uint32_t)(sampling_period*(double)point); // Increase the time
+			data.voltage=vReal;
+			data.current=iReal;
+			MASB_COMM_S_sendData(data); // Send data to host
 
-				if (decimalEquals(vObjetivo, cvConfiguration.eVertex1, tol)) {
-					vObjetivo = cvConfiguration.eVertex2; //siguiente objetivo es el vertice 2
-
+			while (1){
+				if (compareFloating(vdesired,vObjective)){ // If the voltage we want to arrive at short term is equal to the objective
+					if (compareFloating(vObjective,cvConfiguration.eVertex1)){ // If the objective is equal to vertex 1 (border)
+						vObjective = cvConfiguration.eVertex2; // Change the objective to vertex 2 (opposite border)
+						sign=-sign; // Change the sign to move to the opposite direction
+					} else{ // If the objective is not equal to the vertex 1
+						if (compareFloating(vObjective,cvConfiguration.eVertex2)){ // If the objective is equal to vertex 2 (border)
+							vObjective = cvConfiguration.eBegin; // Change the objective to the starting point
+							sign=-sign; // Change the sign to move to the opposite direction
+						} else{ // If the objective is also not equal to vertex 2
+							if (cycle >= cvConfiguration.cycles){ // we check if it is the last cycle
+								end=1; // Stop the measurement
+								break;
+							} else{ // if it is not the last cycle
+								cycle++; // Increase the number of cycle
+								vObjective = cvConfiguration.eVertex1; // Set again the objective to vertex 1
+							}
+						}
+					}
+				} else{ // If the voltage we want to arrive at short term is NOT equal to the objective
+					if ((vdesired+sign*eStep)*sign-vObjective*sign>0){ // If we surpass the objective voltage
+						MCP4725_SetOutputVoltage(hdac,calculateDacOutputVoltage(vObjective)); // Fix Vcell to the objective voltage
+						vdesired=vObjective; // The voltage we want to arrive at short term is now the objective voltage
+					} else{ // If we do not surpass the objective voltage
+						vdesired=vdesired+sign*eStep; // Apply the increment
+						MCP4725_SetOutputVoltage(hdac,calculateDacOutputVoltage(vdesired)); // Fix Vcell to the voltage we want to arrive at short term
+					}
+					break;
 				}
-
-				// ***************** Caso 2: que nos encontremos en el vertice 2 *****************
-				else if (decimalEquals(vObjetivo, cvConfiguration.eVertex2,
-						tol)) {
-					vObjetivo = cvConfiguration.eBegin; //objetivo es volver a eBegin
-
-				}
-
-				// ***************** Caso 3: nos encontramos en ebegin *****************
-				else {
-					vObjetivo = cvConfiguration.eVertex1; //siguiente objetivo es vertice 1
-					cycles--;
-				}
-
 			}
-
-			else { // Cuando no hemos llegado al objetivo, sumamos o restamos un incremento hasta llegar
-
-				// ***************** Para llegar al vertice 1 *****************
-
-				if (decimalEquals(vObjetivo, cvConfiguration.eVertex1, tol)) {
-					if ((desiredVcell + eStep) > vObjetivo) { // sumamos eStep y nos pasamos del objetivo, asi que fijamos el objetivo a vcell
-						desiredVcell = vObjetivo;
-						sendVoltage(vObjetivo);
-					} else { //si sumamos el eStep y no nos pasamos, definimos de nuevo el voltaje de la celda.
-						desiredVcell += eStep;
-						sendVoltage(desiredVcell);
-					}
-				}
-
-				// ***************** Para llegar al vertice 2 *****************
-
-				// El vertice dos se encuentra por debajo del vertice 1, así que tendremos que restar el eStep al vcell
-
-				if (decimalEquals(vObjetivo, cvConfiguration.eVertex2, tol)) { //
-					if ((desiredVcell - eStep) < vObjetivo) { // Restamos eStep y nos pasamos del objetivo (demasiado pequeño), fijamos el vcell
-						desiredVcell = vObjetivo;
-						sendVoltage(desiredVcell);
-					} else { // si restamos eStep y no nos pasamos, definimos de nuevo el voltaje de la celda.
-						desiredVcell -= eStep;
-						sendVoltage(desiredVcell);
-					}
-				}
-
-				// ***************** Para llegar a eBegin *****************
-
-				// El punto inicial se encuentra entre ambos vertices, por debajo del 1 y encima del 2
-
-				if (decimalEquals(vObjetivo, cvConfiguration.eBegin, tol)) {
-					if ((desiredVcell + eStep) > vObjetivo) { // sumamos eStep y nos pasamos del objetivo, asi que fijamos el obetivo a vcell
-						desiredVcell = vObjetivo;
-						sendVoltage(desiredVcell);
-					} else { //si sumamos el eStep y no nos pasamos, definimos de nuevo el voltaje de la celda.
-						desiredVcell += eStep;
-						sendVoltage(desiredVcell);
-					}
-				}
-
+			point++;
+			if (end==1){ // Stop the measurement
+				break;
 			}
 		}
-
 	}
-	HAL_TIM_Base_Stop_IT(&htim3);
-	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_RESET); //abrimos rele
-	state = IDLE;
-
+	HAL_TIM_Base_Stop_IT(&htim3); // Stop the timer
+	HAL_ADC_Stop(&hadc1); // Stop the ADC
+	HAL_GPIO_WritePin(RELAY_GPIO_Port, RELAY_Pin, GPIO_PIN_RESET); // Open the ADC
 }
 
+// Function to compare two long floating point numbers
+// If we did not use that, the two values would never be equal
+int compareFloating(double x, double y){
+	return (x-y)*(x-y)<0.00001;
+}
