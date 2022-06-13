@@ -16,11 +16,10 @@
 #include "main.h"
 extern I2C_HandleTypeDef hi2c1;
 
-uint8_t state;
 AD5280_Handle_T hpot = NULL;
 
 MCP4725_Handle_T hdac;
-void setup(struct Handles_S *handles) {
+void setup() {
 
 	initialize_PMU(); // We initialize the PMU and wait 500 ms (PMU.c)
 
@@ -51,25 +50,10 @@ void loop(void) { //check continuously if a instruction is being send
 	if (MASB_COMM_S_dataReceived()) { // if the instruction has been received
 		switch(MASB_COMM_S_command()) { // switch to command mode
 			case START_CV_MEAS: // if a cyclic voltammetry wants to be started
-				state=CV; // change the state to cyclic voltammetry
+				cyclic_volt(); // perform the entire cyclic voltammetry sending all the data
 				break;
 			case START_CA_MEAS: // if a chronoamperometry wants to be started
-				state=CA; // change the state to chronoamperometry
-				break;
-			case STOP_MEAS: // if the measure wants to be stopped
-				state=IDLE; // change the state to IDLE
-				break;
-			default:
-				break;
-		}
-		switch(state){ // switch to state mode
-			case CV: // if the state is cyclic voltammetry
-				cyclic_volt(); // perform the entire cyclic voltammetry sending all the data
-				state=IDLE; // stop it (IDLE state)
-				break;
-			case CA: // if the state is chronoamperometry
 				chronoamp(); // perform the entire chronoamperometry sending all the data
-				state=IDLE; // stop it (IDLE state)
 				break;
 			default:
 				break;

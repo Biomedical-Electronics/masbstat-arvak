@@ -11,11 +11,7 @@
 #include "main.h"
 
 
-struct Handles_S {
-    UART_HandleTypeDef *huart;
-};
-
-void setup(struct Handles_S *handles);
+void setup(void);
 void loop(void);
 
 #endif /* INC_COMPONENTS_STM32MAIN_H_ */

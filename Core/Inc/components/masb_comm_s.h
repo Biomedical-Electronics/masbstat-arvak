@@ -9,10 +9,6 @@
 #define START_CA_MEAS		0x02
 #define STOP_MEAS			0x03
 
-#define CV					0x01
-#define CA					0x02
-#define IDLE				0x03
-
 #ifndef TRUE
     #define TRUE				1
 #endif

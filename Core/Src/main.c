@@ -100,10 +100,8 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  struct Handles_S myHandles;
-  myHandles.huart = &huart2;
 
-  setup(&myHandles); // setup function from stm32main.c
+  setup(); // setup function from stm32main.c
   /* USER CODE END 2 */
 
   /* Infinite loop */
